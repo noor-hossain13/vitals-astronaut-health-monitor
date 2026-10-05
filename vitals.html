@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VITALS — Astronaut Health Monitor</title>
+<link rel="stylesheet" href="assets/css/vitals.css">
+</head>
+<body>
+<canvas id="spaceBackdrop" aria-hidden="true"></canvas>
+<div id="criticalWash" aria-hidden="true"></div>
+<div class="app-shell">
+<nav class="sidebar">
+  <div class="brand"><img class="brand-logo" src="assets/vitals-logo.svg" alt="VITALS Crew Health OS"></div>
+  <button class="navbtn active" data-icon="DB" data-page="dashboard">Dashboard <span class="kbd-hint">1</span></button>
+  <button class="navbtn" data-icon="OV" data-page="overview">Mission Overview <span class="kbd-hint">2</span></button>
+  <button class="navbtn" data-icon="HR" data-page="vitals">Live Vitals <span class="kbd-hint">3</span></button>
+  <button class="navbtn" data-icon="TR" data-page="trends">Health Trends <span class="kbd-hint">4</span></button>
+  <button class="navbtn" data-icon="TX" data-page="comms">Crew Comms <span class="badge-count" id="commsBadge" style="display:none;"></span><span class="kbd-hint">5</span></button>
+  <button class="navbtn" data-icon="AI" data-page="assistant">AI Assistant <span class="kbd-hint">6</span></button>
+  <button class="navbtn" data-icon="CK" data-page="checkin">Check-In &amp; Actions <span class="kbd-hint">7</span></button>
+  <button class="navbtn" data-icon="OPS" data-page="operations">Operations <span class="kbd-hint">8</span></button>
+  <button class="navbtn" data-icon="ST" data-page="achievements">Achievements <span class="kbd-hint">9</span></button>
+  <button class="navbtn" data-icon="SRC" data-page="sources">Data Sources</button>
+</nav>
+<main class="wrap">
+  <header>
+    <div class="header-identity">
+      <span class="mission-avatar" aria-hidden="true"></span>
+      <div>
+      <h1>VITALS</h1>
+      <div class="tag">ASTRONAUT HEALTH MONITOR — CREW SELF-ASSESSMENT TOOL</div>
+    </div>
+      </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="undoBtn" title="Undo last day (Ctrl+Z)">↶</button>
+      <button class="icon-btn" id="soundBtn" title="Toggle sound alerts">🔊</button>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">🌙</button>
+      <button class="icon-btn" id="glossaryBtn" title="Glossary (?)">?</button>
+    </div>
+    <div id="dayLabel" role="status" aria-live="polite">MISSION DAY 1<div>of 180</div></div>
+  </header>
+
+  <div id="statusBar" role="status" aria-live="polite">
+    <span class="pill" id="statusPill"><span class="dot"></span><span id="statusText">NOMINAL</span></span>
+    <span>MET <span id="metClock">000:00:03:58</span></span>
+    <span class="spacer"></span>
+    <span id="utcClock">UTC —</span>
+    <button id="resetBtn" style="background:none;border:1px solid var(--line);color:var(--text-dim);border-radius:12px;padding:3px 10px;font-family:'Space Mono',monospace;font-size:0.62rem;cursor:pointer;">RESET</button>
+  </div>
+
+  <div class="page active" id="page-dashboard">
+  <div class="mission-hero">
+    <div class="panel orbit-panel">
+      <h2>Orbit View</h2>
+      <div class="orbit-scene" id="orbitScene">
+        <div class="orbit-sun"></div>
+        <div class="orbit-shadow"></div>
+        <div class="orbit-ring"></div>
+        <div class="earth"></div>
+        <div class="station"><span class="station-core"></span></div>
+        <div class="astronaut"></div>
+        <div class="orbit-hud">
+          <span>LEO TRACKING</span>
+          <span id="orbitHud">ALT 408 KM</span>
+        </div>
+      </div>
+    </div>
+    <div class="panel astro-profile">
+      <h2>Astronaut Profile</h2>
+      <div class="profile-top">
+        <div class="mission-patch" id="missionPatch"><img src="assets/vitals-logo.svg" alt="VITALS"></div>
+        <div>
+          <div class="ring-label">COMMANDER</div>
+          <div class="ring-score" id="profileName" style="font-size:1.35rem;">Commander</div>
+          <p class="sub" id="profileStatus" style="margin:0;">Suit telemetry linked. EVA readiness nominal.</p>
+        </div>
+      </div>
+      <div class="profile-stats">
+        <div class="profile-stat"><div class="k">OXYGEN</div><div class="v" id="profileO2">98%</div></div>
+        <div class="profile-stat"><div class="k">EVA READY</div><div class="v" id="profileEva">GO</div></div>
+        <div class="profile-stat"><div class="k">SUIT TEMP</div><div class="v" id="profileTemp">36.5C</div></div>
+        <div class="profile-stat"><div class="k">RISK</div><div class="v" id="profileRisk">LOW</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="vitals-row" id="snapshotRow" style="margin-bottom:12px;"></div>
+
+  <div class="panel">
+    <h2>Closed Environment Monitor</h2>
+    <p class="sub">Cabin atmosphere and life-support indicators for the hostile closed environment astronauts live in during long missions.</p>
+    <div class="env-grid" id="envGrid"></div>
+  </div>
+
+  <div class="panel focus-panel" id="focusPanel">
+    <h2>Today's Focus</h2>
+    <div id="focusText" class="focus-text">Advance a mission day to get a priority recommendation.</div>
+  </div>
+
+  <div class="tab-row" id="quickActions" style="margin-bottom:14px;">
+    <button class="tab-btn" data-goto="checkin">📝 Log Check-In</button>
+    <button class="tab-btn" data-goto="assistant">🤖 Ask AI Assistant</button>
+    <button class="tab-btn" data-goto="trends">📈 View Trends</button>
+    <button class="tab-btn" data-goto="comms">📡 Crew Comms</button>
+  </div>
+
+  <div id="streakRow" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;"></div>
+  <div class="tab-row" id="cardSortRow">
+    <button class="tab-btn active" data-sort="default">Default Order</button>
+    <button class="tab-btn" data-sort="severity">Worst First</button>
+  </div>
+  <div class="grid-cards" id="cardGrid"></div>
+
+  <div id="eventLine">No notable events. Systems nominal.</div>
+
+  <div class="panel">
+    <h2>Mission Alerts</h2>
+    <p class="sub">Automatically generated the moment a reading crosses a threshold — these are also delivered to the astronaut as on-screen notifications in real time.</p>
+    <ul class="msg-list" id="alertsFeed"><li class="ok"><span class="dot"></span><span>No alerts yet. Advance a mission day to begin monitoring.</span></li></ul>
+  </div>
+  </div>
+
+  <div class="page" id="page-overview">
+  <div class="panel mission-overview-panel">
+    <div class="mission-overview-head">
+      <div class="overview-ring-wrap">
+        <canvas id="overviewRing" width="150" height="150"></canvas>
+      </div>
+      <div class="overview-copy">
+        <div class="overview-title-row">
+          <span class="mission-kicker">MISSION CONTROL SNAPSHOT</span>
+          <span class="mission-chip" id="overviewPhase">LAUNCH</span>
+        </div>
+        <h2>Mission Overview</h2>
+        <div class="ring-label">OVERALL CREW HEALTH SCORE</div>
+        <div class="ring-score" id="overviewScore">100</div>
+        <p class="sub">Average of bone, cardiovascular, immune, and behavioral indicators. Radiation dose is tracked separately against its own career limit.</p>
+        <div class="overview-metrics">
+          <div class="overview-metric"><div class="k">MISSION DAY</div><div class="v" id="overviewDay">0 / 180</div></div>
+          <div class="overview-metric"><div class="k">RADIATION MARGIN</div><div class="v" id="overviewRad">600 mSv</div></div>
+          <div class="overview-metric"><div class="k">LOWEST SYSTEM</div><div class="v" id="overviewLowest">100%</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Crew Member</h2>
+    <div class="field"><label>Commander name</label></div>
+    <input type="text" id="crewName" class="text-input" value="Commander" aria-label="Commander name">
+  </div>
+  <div class="panel">
+    <h2>Theme Modes</h2>
+    <div class="theme-row" id="themeModeRow">
+      <button class="theme-chip" data-theme-mode="dark">Dark Cockpit</button>
+      <button class="theme-chip" data-theme-mode="light">NASA Light</button>
+      <button class="theme-chip" data-theme-mode="emergency">Emergency Red</button>
+      <button class="theme-chip" data-theme-mode="deep">Deep Space</button>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Judge Demo Scenarios</h2>
+    <p class="sub">Load a mission state instantly to show how the system detects, evaluates, and recommends action.</p>
+    <div class="demo-grid" id="demoGrid">
+      <button class="demo-card" data-demo="nominal"><b>Nominal Cruise</b><span>Stable crew health, clean environment, low radiation.</span></button>
+      <button class="demo-card" data-demo="radiation"><b>Radiation Event</b><span>Elevated cumulative dose and EVA restrictions.</span></button>
+      <button class="demo-card" data-demo="sleep"><b>Sleep &amp; Stress Risk</b><span>Behavioral and immune indicators need attention.</span></button>
+      <button class="demo-card" data-demo="critical"><b>Critical EVA Review</b><span>Multiple systems require hold/check status.</span></button>
+    </div>
+  </div>
+  <div class="panel overview-progress-panel">
+    <div>
+    <h2>Mission Progress</h2>
+    <div class="progress-track mission-progress"><div class="progress-fill" id="progressBar"></div></div>
+    <p class="sub" id="progressLabel" style="margin-top:8px;">Day 0 of 180 (0%)</p>
+    </div>
+    <div class="progress-readout"><strong id="progressPct">0%</strong><span>COMPLETE</span></div>
+  </div>
+  <div class="panel">
+    <h2>Mission Calendar</h2>
+    <p class="sub">Scripted events that will occur on specific mission days. Plan your check-ins accordingly.</p>
+    <div class="mission-cal" id="missionCal"></div>
+  </div>
+  <div class="panel">
+    <h2>Mission Timeline</h2>
+    <div class="mission-timeline" id="missionTimeline"></div>
+  </div>
+  </div>
+
+  <div class="page" id="page-vitals">
+  <div class="panel vitals-monitor">
+    <div class="wave-head">
+      <span class="wave-title"><span class="live-dot"></span>LIVE VITALS TELEMETRY</span>
+      <span class="wave-status">
+        <span class="signal-chip ok" id="liveSignal">SIGNAL LOCK</span>
+        <span class="signal-chip" id="waveHrLabel">HR 72 BPM</span>
+      </span>
+    </div>
+    <div class="wave-frame">
+      <canvas id="waveCanvas" width="860" height="128"></canvas>
+    </div>
+    <div class="vitals-row live-readouts">
+      <div class="vital-mini ok" id="liveHrCard"><div class="lbl">HEART RATE</div><div class="num" id="liveHr">72<span> bpm</span></div><div class="mini-meta"><span>ECG</span><span id="liveHrState">NOMINAL</span></div></div>
+      <div class="vital-mini ok" id="liveSpo2Card"><div class="lbl">SpO2</div><div class="num" id="liveSpo2">98<span>%</span></div><div class="mini-meta"><span>PULSE OX</span><span id="liveSpo2State">NOMINAL</span></div></div>
+      <div class="vital-mini"><div class="lbl">SKIN TEMP</div><div class="num" id="liveTemp">36.5<span>°C</span></div></div>
+    </div>
+    <div class="gauge-row live-dose">
+      <canvas id="gaugeCanvas" width="140" height="80"></canvas>
+      <div class="gauge-label">RADIATION EXPOSURE<br><span class="big" id="gaugeVal">0 mSv</span><br><span id="doseState">NASA HRP limit: 600 mSv</span></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Telemetry Log</h2>
+    <p class="sub">One frame logged per mission day advanced — a lightweight record of what the crew member's readings looked like over time.</p>
+    <table class="telemetry" id="telemetryTable">
+      <thead><tr><th>DAY</th><th>HR</th><th>SpO2</th><th>TEMP</th><th>RAD (mSv)</th></tr></thead>
+      <tbody id="telemetryBody"></tbody>
+    </table>
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+      <button id="exportBtn" style="padding:8px 14px;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:0.72rem;">EXPORT LOG (CSV)</button>
+      <button id="exportJsonBtn" style="padding:8px 14px;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:0.72rem;">EXPORT FULL (JSON)</button>
+    </div>
+  </div>
+  </div>
+
+  <div class="page" id="page-trends">
+  <div class="panel">
+    <div class="tab-row" id="trendTabs"></div>
+    <h2 id="chartTitle">Bone Mineral Density — Trend</h2>
+    <p class="sub" id="chartSub">Weight-bearing bone density (hip/spine), relative to pre-mission baseline.</p>
+    <div class="tab-row" id="compareTabs"></div>
+    <div class="tab-row" id="trendRangeTabs">
+      <button class="tab-btn" data-trange="30">30D</button>
+      <button class="tab-btn" data-trange="90">90D</button>
+      <button class="tab-btn active" data-trange="full">Full Mission</button>
+    </div>
+    <div id="trendLegend" style="font-family:'Space Mono',monospace;font-size:0.68rem;color:var(--text-dim);margin-bottom:8px;"></div>
+    <div id="chartWrap"><canvas id="trendChart" width="860" height="180"></canvas><div id="trendTooltip"></div></div>
+  </div>
+
+  <div class="panel">
+    <h2>Daily Composite Risk Matrix</h2>
+    <p class="sub">Worst status across all five indicators for each mission day — a quick way to spot patterns over time. Click a day for details.</p>
+    <div class="tab-row" id="matrixRange">
+      <button class="tab-btn active" data-range="30">30D</button>
+      <button class="tab-btn" data-range="90">90D</button>
+      <button class="tab-btn" data-range="full">Full Mission</button>
+    </div>
+    <div class="risk-legend">
+      <span><i class="dot ok"></i>Nominal</span>
+      <span><i class="dot watch"></i>Caution</span>
+      <span><i class="dot crit"></i>Anomaly / Event</span>
+    </div>
+    <div class="risk-grid" id="riskGrid"></div>
+    <div class="risk-detail" id="riskDetail">Advance a few mission days, then click a cell to see that day's readings.</div>
+  </div>
+  </div>
+
+  <div class="page" id="page-comms">
+  <div class="panel">
+    <h2>Crew Comms <button id="markReadBtn" style="float:right;padding:5px 10px;background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:0.65rem;">MARK ALL READ</button></h2>
+    <p class="sub">Every automatic health message sent to the crew, ground-control inbox style. Reply and ground control will respond.</p>
+    <div class="tab-row" id="commsFilterTabs"></div>
+    <div id="commsList"></div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <input type="text" id="replyInput" class="text-input" placeholder="Reply to ground control..." aria-label="Reply text">
+      <button id="replySendBtn" style="padding:0 16px;background:var(--accent);color:#06090e;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:0.8rem;">SEND</button>
+    </div>
+  </div>
+  </div>
+
+  <div class="page" id="page-assistant">
+  <div class="chat-shell">
+    <div class="bot-header">
+      <span class="mission-avatar bot-avatar" aria-hidden="true"></span>
+      <div>
+        <h2 style="margin:0;">AI Flight Assistant</h2>
+        <div class="assistant-source">Answer source: <b id="assistantSource">mission rules + live telemetry</b></div>
+        <div class="bot-status"><span class="live-dot" style="background:var(--ok);"></span>ONLINE · LIVE MISSION DATA LINKED</div>
+      </div>
+      <button id="clearChatBtn" style="margin-left:auto;padding:5px 10px;background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:0.62rem;">CLEAR CHAT</button>
+    </div>
+
+    <div id="chatLog">
+      <div id="chatEmpty">
+        <span class="mission-avatar empty-assistant-avatar" aria-hidden="true"></span>
+        <div class="assistant-quick-grid">
+          <div class="assistant-stat"><div class="k">DAY</div><div class="v" id="aiDayStat">0 / 180</div></div>
+          <div class="assistant-stat"><div class="k">TOP PRIORITY</div><div class="v" id="aiPriorityStat">Nominal</div></div>
+          <div class="assistant-stat"><div class="k">RADIATION</div><div class="v" id="aiRadStat">0 mSv</div></div>
+        </div>
+        <p class="sub" id="assistantHint">Ask about your current readings, what a status means, or what to do next. Answers use your live mission data and are generated by Claude.</p>
+        <div class="tab-row" id="suggestRow">
+          <button class="tab-btn" data-q="What does my current radiation exposure mean for the rest of the mission?">Explain my radiation risk</button>
+          <button class="tab-btn" data-q="Based on my current readings, what should I prioritize today?">What should I prioritize today?</button>
+          <button class="tab-btn" data-q="Is my overall mission health trending in a good direction?">How am I trending overall?</button>
+        </div>
+        <div class="chat-tools">
+          <button class="chat-tool-btn" data-q="Give me a 3 step action plan for today.">3 step action plan</button>
+          <button class="chat-tool-btn" data-q="Which system is currently the weakest and why?">Weakest system</button>
+          <button class="chat-tool-btn" data-q="Summarize the current mission health status for ground control.">Ground summary</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" class="text-input" placeholder="e.g. Why is my radiation dose rising?">
+      <button id="chatSendBtn" style="padding:0 20px;background:var(--accent);color:#06090e;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:0.8rem;">ASK</button>
+    </div>
+  </div>
+  </div>
+
+  <div class="page" id="page-checkin">
+  <div class="panel">
+    <h2>Daily Check-In</h2>
+    <p class="sub">Log today's activity. These choices directly affect tomorrow's readings — this is where you act on your own status, not just observe it.</p>
+    <div class="tab-row" id="presetRow">
+      <button class="tab-btn" data-preset="optimal">Optimal Day</button>
+      <button class="tab-btn" data-preset="rest">Rest Day</button>
+      <button class="tab-btn" data-preset="eva">High-Risk EVA Day</button>
+      <button class="tab-btn" data-preset="neglect">Neglected Day</button>
+    </div>
+    <div class="checkin-grid">
+      <div class="field">
+        <label>Resistive exercise (ARED/treadmill) <span class="v" id="lbl-ex">75</span> min</label>
+        <input type="range" id="in-exercise" min="0" max="150" value="75">
+      </div>
+      <div class="field">
+        <label>Sleep last night <span class="v" id="lbl-sleep">7.0</span> hrs</label>
+        <input type="range" id="in-sleep" min="2" max="10" value="7" step="0.5">
+      </div>
+      <div class="field">
+        <label>Self-rated mood/stress <span class="v" id="lbl-mood">3</span> / 5</label>
+        <input type="range" id="in-mood" min="1" max="5" value="3">
+      </div>
+      <div class="field">
+        <label>EVA / high-radiation activity today <span class="v" id="lbl-eva">No</span></label>
+        <input type="range" id="in-eva" min="0" max="1" value="0" step="1">
+      </div>
+    </div>
+    <p class="sub" style="margin-top:16px;">Projected effect on tomorrow's readings, based on your choices above (excludes random mission events):</p>
+    <div class="preview-grid" id="previewGrid"></div>
+
+    <button id="advanceBtn">LOG DAY 1 &amp; ADVANCE</button>
+    <p class="sub" style="margin-top:10px;text-align:center;">Press <span class="kbd">Shift</span>+<span class="kbd">→</span> to advance from anywhere · <span class="kbd">Ctrl</span>+<span class="kbd">Z</span> to undo</p>
+  </div>
+
+  <div class="panel">
+    <h2>Recommended Actions</h2>
+    <p class="sub">Generated from today's readings — this is the "act on it" layer the challenge asks for.</p>
+    <ul id="recoList"></ul>
+  </div>
+  <div class="panel">
+    <h2>Crew Action Checklist</h2>
+    <p class="sub">A practical task list based on the current health and cabin readings.</p>
+    <div class="action-grid" id="actionGrid"></div>
+  </div>
+  </div>
+
+  <div class="page" id="page-achievements">
+  <div class="panel">
+    <h2>Achievements</h2>
+    <p class="sub">Earn badges as you progress through the mission. Unlocked achievements glow green.</p>
+    <div style="margin-bottom:12px;">
+      <div class="ring-label">UNLOCKED</div>
+      <div class="ring-score" id="achCount" style="font-size:1.3rem;">0 / 10</div>
+      <div class="progress-track"><div class="progress-fill" id="achBar" style="width:0%"></div></div>
+    </div>
+    <div class="ach-grid" id="achGrid"></div>
+  </div>
+  </div>
+
+  <div class="page" id="page-operations">
+  <div class="ops-grid">
+    <div class="panel">
+      <h2>Authentication</h2>
+      <p class="sub">Demo login controls role permissions for crew, flight surgeon, ground, and admin views.</p>
+      <div class="auth-grid">
+        <input type="text" id="loginName" class="text-input" placeholder="Operator name">
+        <select id="loginRole" class="text-input">
+          <option value="crew">Crew</option>
+          <option value="surgeon">Flight Surgeon</option>
+          <option value="ground">Ground Control</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button class="tab-btn" id="loginBtn">Login</button>
+      </div>
+      <div class="risk-detail" id="authStatus">Not signed in. Demo permissions are local to this browser.</div>
+    </div>
+    <div class="panel">
+      <h2>Data Source Mode</h2>
+      <p class="sub">Choose whether the mission advances from the simulator or imported telemetry data.</p>
+      <div class="segmented" id="sourceModeSwitch">
+        <button class="active" data-source-mode="simulation">Simulation</button>
+        <button data-source-mode="imported">Imported CSV</button>
+        <button data-source-mode="hybrid">Hybrid</button>
+      </div>
+      <div class="risk-detail" id="sourceModeStatus">Simulation mode is active.</div>
+    </div>
+  </div>
+  <div class="ops-grid">
+    <div class="panel">
+      <h2>Mission Roles</h2>
+      <p class="sub">Switch perspective without changing the mission data. Each role reveals a different operational emphasis.</p>
+      <div class="segmented" id="roleSwitch">
+        <button class="active" data-role="crew">Crew</button>
+        <button data-role="surgeon">Flight Surgeon</button>
+        <button data-role="ground">Ground Control</button>
+        <button data-role="admin">Admin</button>
+      </div>
+      <div class="role-brief" id="roleBrief"></div>
+    </div>
+    <div class="panel">
+      <h2>Realtime Presence</h2>
+      <p class="sub">Connected operators viewing this mission right now.</p>
+      <div class="presence-list" id="presenceList"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Predictive Risk Forecast</h2>
+    <p class="sub">Projected risk based on the last trend slope and current mission phase.</p>
+    <div class="forecast-grid" id="forecastGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Flight Surgeon Notes</h2>
+    <p class="sub">Review alerts, record status, and escalate actions such as EVA restriction.</p>
+    <div class="surgeon-note-grid">
+      <select id="noteAlertSelect" class="text-input"></select>
+      <select id="noteStatus" class="text-input">
+        <option value="reviewed">Reviewed</option>
+        <option value="monitoring">Monitoring</option>
+        <option value="resolved">Resolved</option>
+        <option value="restricted">EVA Restricted</option>
+        <option value="escalated">Escalated</option>
+      </select>
+      <select id="noteSeverity" class="text-input">
+        <option value="watch">Watch</option>
+        <option value="crit">Critical</option>
+        <option value="ok">Resolved</option>
+      </select>
+    </div>
+    <textarea class="text-input data-paste" id="noteText" placeholder="Clinical note or ground-control instruction..."></textarea>
+    <button class="tab-btn" id="addNoteBtn">Add Surgeon Note</button>
+    <div class="notes-list" id="surgeonNotesList"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Mission Replay</h2>
+    <p class="sub">Replay historical mission days on the dashboard without changing the saved mission state.</p>
+    <div class="replay-row">
+      <button class="tab-btn" id="replayStartBtn">Start Replay</button>
+      <button class="tab-btn" id="replayStopBtn">Stop</button>
+      <input type="range" id="replaySlider" min="0" max="0" value="0">
+      <span id="replayLabel">Day 0</span>
+    </div>
+    <div class="replay-insight" id="replayInsight">Replay will mark events and imported telemetry on the trend chart.</div>
+  </div>
+
+  <div class="ops-grid">
+    <div class="panel">
+      <h2>Import Telemetry</h2>
+      <p class="sub">Paste CSV rows as day,hr,spo2,temp,rad,sleep,exercise,mood. Imported telemetry updates vitals, trend history, and report.</p>
+      <textarea class="text-input data-paste" id="csvInput" placeholder="day,hr,spo2,temp,rad,sleep,exercise,mood&#10;1,74,98,36.6,1.2,7.5,80,4"></textarea>
+      <button class="tab-btn" id="importCsvBtn">Import CSV</button>
+    </div>
+    <div class="panel">
+      <h2>Sync & Report</h2>
+      <p class="sub">Offline changes queue locally and flush when the database link returns.</p>
+      <div class="sync-grid" id="syncGrid"></div>
+      <div class="report-actions">
+        <button class="tab-btn" id="reportBtn">Open Mission Report</button>
+        <button class="tab-btn" id="structuredBtn">Check Structured DB</button>
+      </div>
+      <div class="risk-detail" id="structuredStatus">Structured database status will appear here.</div>
+    </div>
+  </div>
+  </div>
+
+  <div class="page" id="page-sources">
+  <div class="panel">
+    <h2>NASA Data Sources</h2>
+    <div class="cite" id="citeList">
+      <p data-cite="NASA Open Science Data Repository (OSDR) — osdr.nasa.gov — Inspiration4 mission studies OSD-575 (blood serum metabolic panel; immune & cardiac cytokine arrays) and OSD-656 (urine inflammation panel), used to set realistic ranges for the immune and cardiovascular indicators."><b>NASA Open Science Data Repository (OSDR)</b> — <a href="https://osdr.nasa.gov" target="_blank" rel="noopener">osdr.nasa.gov</a> — Inspiration4 mission studies <b>OSD-575</b> and <b>OSD-656</b>, used to set realistic ranges for the immune and cardiovascular indicators. <button class="copy-btn" data-i="0">COPY</button></p>
+      <p data-cite="NASA Human Research Program radiation exposure standards — career dose limit (~600 mSv) used to calibrate the radiation module."><b>NASA Human Research Program</b> radiation exposure standards — career dose limit (~600 mSv) used to calibrate the radiation module. <button class="copy-btn" data-i="1">COPY</button></p>
+      <p data-cite="Rates calibrated against NASA-funded spaceflight research: bone density loss ~1-1.5%/month (Lang et al. 2004, LeBlanc et al.), cardiovascular deconditioning (Hughson et al. 2012), sleep deficiency in crew (Barger et al. 2014) - all linked through OSDR's associated publications."><span>Rates calibrated against NASA-funded spaceflight research: bone density loss ~1–1.5%/month (Lang et al. 2004; LeBlanc et al.), cardiovascular deconditioning (Hughson et al. 2012), sleep deficiency in crew (Barger et al. 2014).</span> <button class="copy-btn" data-i="2">COPY</button></p>
+      <p data-cite="Keyboard shortcuts: 1-9 navigate pages, Shift+Right Arrow advances a mission day, Ctrl+Z undo, ? opens glossary."><b>Keyboard shortcuts</b> — <b>1–9</b> navigate pages · <b>Shift</b>+<b>→</b> advance a day · <b>Ctrl</b>+<b>Z</b> undo · <b>?</b> glossary. <button class="copy-btn" data-i="3">COPY</button></p>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>About This Simulation</h2>
+    <p class="sub">VITALS is a <b>training simulation</b>, not a real medical device. Readings are modeled from published spaceflight research and are intended to illustrate how daily choices compound over a long-duration mission. Not for actual medical use or diagnosis.</p>
+    <button id="replayIntroBtn" style="padding:8px 14px;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:6px;cursor:pointer;font-family:'Space Mono',monospace;font-size:0.72rem;">REPLAY INTRO</button>
+  </div>
+  </div>
+</main>
+</div>
+
+<div id="toastStack" aria-live="polite"></div>
+
+<div id="overlay">
+  <div id="overlayCard">
+    <h2 id="overlayTitle">Mission Milestone</h2>
+    <p id="overlayText"></p>
+    <button id="closeOverlay">CONTINUE</button>
+  </div>
+</div>
+
+<div class="modal" id="glossaryModal">
+  <div class="modal-card">
+    <button class="modal-close" id="glossaryClose" aria-label="Close glossary">✕</button>
+    <h2>Glossary</h2>
+    <div class="glossary-item"><b>ARED</b><span>Advanced Resistive Exercise Device — the on-orbit strength training hardware astronauts use to fight bone and muscle loss.</span></div>
+    <div class="glossary-item"><b>SpO2</b><span>Peripheral oxygen saturation — percentage of oxygen-saturated hemoglobin in the blood. Normal ~95–100%.</span></div>
+    <div class="glossary-item"><b>mSv</b><span>Millisievert — unit of ionizing radiation dose. NASA career limit for astronauts is roughly 600 mSv depending on age and sex.</span></div>
+    <div class="glossary-item"><b>GCR / SPE</b><span>Galactic Cosmic Rays / Solar Particle Events — the two main sources of space radiation. SPEs are sudden, high-intensity solar bursts.</span></div>
+    <div class="glossary-item"><b>EVA</b><span>Extra-Vehicular Activity — spacewalk. Increases radiation and physical strain.</span></div>
+    <div class="glossary-item"><b>Orthostatic intolerance</b><span>Dizziness or fainting on standing up — a common post-flight cardiovascular deconditioning symptom.</span></div>
+    <div class="glossary-item"><b>BMD</b><span>Bone Mineral Density — used here as % of pre-mission baseline.</span></div>
+    <div class="glossary-item"><b>HRP</b><span>Human Research Program — NASA division that sets astronaut health standards.</span></div>
+    <div class="glossary-item"><b>OSDR</b><span>Open Science Data Repository — NASA's public archive of spaceflight biology data.</span></div>
+    <div class="glossary-item"><b>MET</b><span>Mission Elapsed Time — time since mission start, in days:hours:minutes:seconds format.</span></div>
+  </div>
+</div>
+
+<script src="assets/js/vitals.js"></script>
+</body>
+</html>
