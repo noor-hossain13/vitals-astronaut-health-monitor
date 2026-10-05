@@ -104,11 +104,16 @@ VITALS is a hackathon prototype and educational decision-support interface. It i
 
 ## Team
 
-Add your team details before submitting:
+**Team name:** QuantumBytes  
+**NASA Space Apps Challenge location:** Cumilla
 
-- **Team name:** _Add your team name_
-- **Members:** _Add names and roles_
-- **NASA Space Apps Challenge location:** _Add your local event or virtual location_
+| Team member | Role |
+| --- | --- |
+| Noor Hossain | Team Leader, Developer, and System Architect |
+| Bijoy Kumar Ray | Developer and Security Lead |
+| Samiya Anzuman | Documentation Lead |
+| MD. Nazmul Islam Hridoy | Researcher |
+| Tanjil Al-Nayeef | QA Lead |
 
 ## License
 
