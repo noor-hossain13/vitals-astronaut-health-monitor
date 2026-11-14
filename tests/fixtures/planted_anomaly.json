@@ -1,0 +1,8 @@
+{"rows":[
+{"timestamp":"2032-02-01T00:00:00Z","heart_rate":64,"hrv":51,"spo2":98,"sleep_hours":7.3,"core_temperature":37.0,"exercise_minutes":35},
+{"timestamp":"2032-02-02T00:00:00Z","heart_rate":65,"hrv":53,"spo2":98,"sleep_hours":7.1,"core_temperature":36.9,"exercise_minutes":33},
+{"timestamp":"2032-02-03T00:00:00Z","heart_rate":63,"hrv":50,"spo2":99,"sleep_hours":7.4,"core_temperature":37.0,"exercise_minutes":36},
+{"timestamp":"2032-02-04T00:00:00Z","heart_rate":64,"hrv":52,"spo2":98,"sleep_hours":7.2,"core_temperature":37.1,"exercise_minutes":34},
+{"timestamp":"2032-02-05T00:00:00Z","heart_rate":65,"hrv":51,"spo2":98,"sleep_hours":7.3,"core_temperature":37.0,"exercise_minutes":35},
+{"timestamp":"2032-02-06T00:00:00Z","heart_rate":77,"hrv":31,"spo2":94,"sleep_hours":4.6,"core_temperature":37.8,"exercise_minutes":12}
+]}

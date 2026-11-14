@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="title description">
+  <title id="title">VITALS Astronaut Health Monitor logo</title>
+  <desc id="description">A cyan orbital medical icon with a heartbeat pulse and the VITALS wordmark.</desc>
+  <defs>
+    <linearGradient id="orbitalGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#67e8f9"/>
+      <stop offset="1" stop-color="#22b8d1"/>
+    </linearGradient>
+    <linearGradient id="pulseGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fb7185"/>
+      <stop offset="1" stop-color="#ff3d68"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Icon -->
+  <g transform="translate(56 48)">
+    <circle cx="155" cy="162" r="112" fill="#071522" stroke="url(#orbitalGradient)" stroke-width="8"/>
+    <ellipse cx="155" cy="162" rx="148" ry="58" fill="none" stroke="#67e8f9" stroke-width="8" opacity=".9" transform="rotate(-28 155 162)"/>
+    <circle cx="285" cy="82" r="13" fill="#fb7185" filter="url(#glow)"/>
+    <path d="M64 165h45l18-36 30 74 29-57 17 19h45" fill="none" stroke="url(#pulseGradient)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+    <circle cx="155" cy="162" r="13" fill="#f8fafc"/>
+    <path d="M155 133v58M126 162h58" stroke="#071522" stroke-width="8" stroke-linecap="round"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g transform="translate(410 110)">
+    <text x="0" y="105" fill="#f8fafc" font-family="Arial, Helvetica, sans-serif" font-size="132" font-weight="800" letter-spacing="16">VITALS</text>
+    <path d="M4 139h650" stroke="#22d3ee" stroke-width="6" stroke-linecap="round"/>
+    <text x="5" y="190" fill="#9fb3c8" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" letter-spacing="8">ASTRONAUT HEALTH MONITOR</text>
+    <text x="5" y="244" fill="#fb7185" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700" letter-spacing="5">MONITOR • UNDERSTAND • ACT</text>
+  </g>
+</svg>

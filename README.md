@@ -1,111 +1,83 @@
-# VITALS — Astronaut Health Monitor
+# VITALS — Astronaut Health Evidence Console
 
-> A decision-support dashboard that helps astronauts monitor health risks and act early during long-duration space missions.
+> **Simulated telemetry → personal baseline → tested detection rule → exact evidence → safe explanation**
 
-Built for the **2026 NASA Space Apps Challenge** challenge: **Create Health Monitoring Software for Astronauts on Space Missions**.
+VITALS is a crew-health console built by **QuantumBytes** for the 2026 NASA Space Apps Challenge. It shows astronauts what changed in their own telemetry, when it changed, and which tested rule caused an alert—without presenting a diagnosis.
 
-Long missions can expose crew members to radiation, isolation and confinement, altered gravity, and a closed environment. VITALS turns mission and health indicators into an understandable, action-oriented view of astronaut wellbeing.
+## Important data disclosure
 
-## The challenge
+**All telemetry displayed by this prototype is simulated.** It is generated for a transparent demonstration of the replay and detection pipeline. VITALS does not use, expose, or claim to process live astronaut medical data.
 
-Astronauts on long-duration missions need to recognize changes to their own health and respond before small issues become serious. VITALS provides one place to review key health indicators, identify risks, understand why they matter, and record or escalate a response.
+## What the demo proves
 
-## What VITALS does
+The WebSocket stream replays `demo_fixtures/vitals.json` at one row per second. After a 30-day simulated personal baseline is available, the final replay rows contain a deliberately planted multi-signal deviation. The console shows:
 
-- Shows an at-a-glance **mission health overview** across bone, cardiovascular, immune, and behavioral indicators.
-- Tracks **radiation exposure** separately against a career dose threshold and identifies elevated-EVA risk.
-- Displays vital telemetry including heart rate, SpO₂, temperature, and radiation dose.
-- Generates prioritized **mission alerts** with status tracking and flight-surgeon notes.
-- Includes realistic scenario modes: **Nominal Cruise**, **Radiation Event**, and **Sleep & Stress Risk**.
-- Simulates day-by-day mission progression, history, milestones, and replay.
-- Imports CSV telemetry in the format: `day,hr,spo2,temp,rad,sleep,exercise,mood`.
-- Provides mission roles, communications, a crew-facing health assistant, and a shareable mission report.
-- Supports collaborative persistence and real-time updates when a MySQL database is configured; it remains usable in offline-first mode without one.
+- Heart rate, HRV, SpO₂, sleep hours, core temperature, and exercise minutes.
+- A live trace with a **±2 SD personal-baseline band** behind it.
+- Exact current reading, 30-day mean, standard deviation, z-score, and rule name.
+- A 48-hour multi-signal rule that fires only when two or more signals deviate.
+- A crew-facing, plain-language summary and citable NASA OSDR metadata.
 
-## Why it matters
+## Detection is deterministic
 
-VITALS focuses on the human factors of exploration. Rather than displaying raw measurements alone, it connects trends to practical actions—such as reviewing sleep and stress risk, adjusting exercise, recording a clinical review, or restricting high-radiation activity.
+`src/compute.py` contains the detection logic. It does not call a language model.
 
-## Tech stack
+1. Every current signal is compared with the **preceding** 30 readings; the current point is excluded from its own baseline.
+2. A per-signal rule fires at a z-score threshold of ±2 standard deviations in the configured direction.
+3. The 48-hour rule fires when at least two individual signal rules fire in the latest two daily readings.
 
-- **Frontend:** HTML, CSS, and vanilla JavaScript
-- **Backend:** Node.js and Express
-- **Optional database:** MySQL via `mysql2`
-- **Real-time updates:** Server-Sent Events (SSE)
+The test suite verifies a planted anomaly, every clean-fixture signal rule, and the multi-signal rule.
+
+## Safety boundary
+
+The explanation layer receives only a verified alert object and cached OSDR study metadata. Its bounded system prompt and post-check prohibit diagnostic or treatment language. VITALS reports measurements and rule outputs; it is **not a medical device** and does not provide clinical advice.
+
+## NASA sources
+
+- [NASA OSDR OSD-575 — SpaceX Inspiration4 Serum Biomarker Study](https://osdr.nasa.gov/bio/repo/data/studies/OSD-575)
+- [NASA OSDR OSD-656 — SpaceX Inspiration4 Urine Inflammation Panel](https://osdr.nasa.gov/bio/repo/data/studies/OSD-656)
+- [NASA Human Performance — Radiation Exposure Standard](https://www.nasa.gov/reference/4-0-human-performance/)
+
+These studies are cited as scientific context. This prototype does not infer medical conclusions from them.
 
 ## Run locally
 
-### Prerequisites
-
-- Node.js 18 or newer
-- MySQL 8+ (optional; required only for shared persistent data)
-
-### Setup
+Requirements: Python 3.10+.
 
 ```bash
-npm install
-npm start
+python -m pip install -r requirements.txt
+python -m uvicorn app:app --reload
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). Use the speed control to replay the simulation faster.
 
-If MySQL is not running, the dashboard automatically starts in offline-first mode. The visual dashboard and local simulation remain available; database-backed endpoints will be unavailable.
+### Deploy on Render
 
-### Optional MySQL configuration
+`render.yaml` is included. Connect this public GitHub repository to Render and it will install `requirements.txt`, start `uvicorn app:app`, and use `/api/health` for health checks.
 
-Create a local `.env` file (never commit it) with your database connection details:
+## Test the detection rules
 
-```env
-PORT=3000
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=vitals_db
+```bash
+python -m unittest discover -s tests -v
 ```
-
-The server creates the required database tables when it connects.
-
-## Deployment
-
-Deploy the full Node.js application as a **Render Web Service**:
-
-| Setting | Value |
-| --- | --- |
-| Build command | `npm install` |
-| Start command | `npm start` |
-| Health check path | `/api/health` |
-
-Set the database environment variables in the hosting dashboard if you use a hosted MySQL instance. Do not put database passwords in GitHub.
-
-> Add the final hosted URL here before submitting: **Live demo: _coming soon_**
-
-## Data and scientific inspiration
-
-The project uses publicly available NASA research context to guide its health indicators and scenario ranges:
-
-- [NASA Open Science Data Repository (OSDR)](https://osdr.nasa.gov/), including Inspiration4-related studies OSD-575 and OSD-656.
-- NASA Human Research Program radiation exposure guidance, used to contextualize cumulative radiation risk.
-- Spaceflight research on bone density loss, cardiovascular deconditioning, and crew sleep deficiency.
-
-VITALS is a hackathon prototype and educational decision-support interface. It is **not** a medical device and must not be used for clinical diagnosis or treatment.
 
 ## Project structure
 
 ```text
-.
-├── assets/           # Visual assets
-├── vitals.html       # Dashboard UI and client-side simulation
-├── server.js         # Express API, persistence, and real-time updates
-├── schema.sql        # Database schema reference
-├── package.json      # Scripts and dependencies
-└── README.md
+app.py                  # FastAPI routes and WebSocket replay
+demo_fixtures/vitals.json
+src/compute.py          # Deterministic baseline + z-score rules
+src/explanation.py      # Alert-only, safety-checked evidence explanation
+src/osdr_metadata.py    # Cached citable OSDR study metadata
+tests/fixtures/         # Clean and planted-anomaly fixtures
+tests/test_compute.py   # Detection-rule tests
+index.html              # Crew-facing evidence console
+assets/                 # UI styling, client code, and visual assets
 ```
 
-## Team
+## Team — QuantumBytes
 
-**Team name:** QuantumBytes  
-**NASA Space Apps Challenge location:** Cumilla
+**NASA Space Apps Challenge location:** Cumilla, Bangladesh
 
 | Team member | Role |
 | --- | --- |
@@ -117,4 +89,4 @@ VITALS is a hackathon prototype and educational decision-support interface. It i
 
 ## License
 
-Add a license before publishing if you want others to reuse this project (MIT is a common choice for hackathon projects).
+Licensed under the [Apache License 2.0](LICENSE).

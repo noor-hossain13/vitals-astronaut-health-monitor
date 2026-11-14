@@ -738,11 +738,11 @@
   // ---- AI ----
   let sampleFn = null, chatTurns = [];
   (async () => {
-    try { sampleFn = window.claude ? await window.claude.use('sample') : null; } catch (e) { sampleFn = null; }
+    sampleFn = null; // Evidence Stream is the only explanation surface for this competition build.
     const hint = document.getElementById('assistantHint');
     if (!sampleFn && hint) {
       hint.textContent = "The AI assistant isn't available in this view — try opening this page on claude.ai.";
-      document.getElementById('chatSendBtn').disabled = false;
+      document.getElementById('chatSendBtn').disabled = true;
     }
     const source = document.getElementById('assistantSource');
     const status = document.querySelector('.bot-status');
@@ -751,8 +751,8 @@
       if (source) source.textContent = 'cloud AI + live telemetry';
       if (status) status.innerHTML = '<span class="live-dot" style="background:var(--ok);"></span>CLOUD AI ONLINE &middot; LIVE MISSION DATA LINKED';
     } else {
-      if (hint) hint.textContent = 'Cloud AI is unavailable here, so the onboard advisor is active. It still answers from the current mission readings and action rules.';
-      if (source) source.textContent = 'onboard rules + live telemetry';
+      if (hint) hint.textContent = 'Open Evidence Stream to inspect verified simulated deviations, deterministic rules, and OSDR citations.';
+      if (source) source.textContent = 'tested rules + cached OSDR metadata';
       if (status) status.innerHTML = '<span class="live-dot" style="background:var(--watch);"></span>ONBOARD ADVISOR ONLINE &middot; LIVE MISSION DATA LINKED';
     }
   })();

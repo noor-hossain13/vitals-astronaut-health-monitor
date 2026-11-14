@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="VITALS simulated astronaut health telemetry console.">
+  <title>VITALS | Crew Health Evidence Console</title>
+  <link rel="stylesheet" href="/assets/css/console.css">
+</head>
+<body>
+  <div class="starfield"></div>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="VITALS home"><img src="/assets/nav/brand-v.svg" alt=""><span>VITALS</span></a>
+      <div class="mission-id"><span class="live-dot"></span> CREW HEALTH CONSOLE <b>•</b> MISSION SIM-04</div>
+      <div class="sim-badge">SIMULATED TELEMETRY</div>
+    </header>
+
+    <section class="hero" id="top">
+      <div>
+        <p class="eyebrow">EVIDENCE-FIRST HEALTH MONITORING</p>
+        <h1>Know what changed.<br><em>See why it flagged.</em></h1>
+        <p class="lede">VITALS replays simulated crew telemetry, tests it against a personal baseline, and presents the exact evidence behind every alert.</p>
+      </div>
+      <aside class="stream-control card">
+        <div class="card-title"><span>STREAM CONTROL</span><span id="connection">CONNECTING</span></div>
+        <div class="stream-state"><span class="orbit-dot"></span><strong id="streamState">Awaiting stream</strong><small id="clock">--</small></div>
+        <div class="control-row"><button id="pause" class="primary">Pause</button><button id="reset" class="ghost">Reset replay</button></div>
+        <label for="speed">Replay speed <output id="speedValue">1×</output></label>
+        <input id="speed" type="range" min="0.25" max="8" step="0.25" value="1">
+        <p class="fine">One simulated row per second at 1×. No live crew data is used.</p>
+      </aside>
+    </section>
+
+    <section class="evidence-strip" aria-label="Evidence chain">
+      <span>SIMULATED TELEMETRY</span><i>→</i><span>30-DAY PERSONAL BASELINE</span><i>→</i><span>TESTED RULES</span><i>→</i><span>OSDR EVIDENCE</span>
+    </section>
+
+    <section class="section-heading"><div><p class="eyebrow">LIVE SIGNALS</p><h2>Personal baseline, not population average.</h2></div><p>Shaded bands show ±2 standard deviations from the preceding 30 simulated days.</p></section>
+    <section class="signals" id="signals" aria-live="polite"></section>
+
+    <section class="console-grid">
+      <article class="card alert-card">
+        <div class="card-title"><span>DETECTION CONSOLE</span><span id="alertCount">NO ACTIVE RULES</span></div>
+        <div id="alertList" class="alert-list"><div class="empty">Building a 30-day personal baseline from simulated readings…</div></div>
+      </article>
+      <article class="card summary-card">
+        <div class="card-title"><span>CREW-FACING SUMMARY</span><span>PLAIN LANGUAGE</span></div>
+        <div class="quote-mark">“</div><p id="summary">The stream is establishing an individual baseline. No diagnosis is produced by VITALS.</p>
+        <div class="safety-note">VITALS reports rule outputs and evidence only. It does not diagnose conditions or recommend treatment.</div>
+      </article>
+    </section>
+
+    <section class="explanation card">
+      <div class="card-title"><span>EXPLANATION LAYER</span><span>ALERT OBJECT + CACHED OSDR METADATA ONLY</span></div>
+      <div id="explanationBody" class="explanation-body"><p>When a rule fires, this panel will state the measured deviation and link to a relevant published NASA OSDR study.</p></div>
+    </section>
+
+    <section class="method-grid">
+      <article><p class="eyebrow">HOW VITALS DETECTS</p><h3>Deterministic by design.</h3><p>Every signal is compared with the crew member’s own preceding 30-day baseline. A rule fires only at a z-score threshold of ±2 standard deviations. A separate rule fires when two or more signals deviate within 48 hours.</p></article>
+      <article><p class="eyebrow">DATA HONESTY</p><h3>Simulation, clearly labeled.</h3><p>This prototype replays generated telemetry to demonstrate the detection pipeline. It does not claim to use live astronaut medical records.</p></article>
+      <article><p class="eyebrow">EVIDENCE</p><h3>Sources you can inspect.</h3><p><a href="https://osdr.nasa.gov/bio/repo/data/studies/OSD-575" target="_blank" rel="noreferrer">OSD-575</a> and <a href="https://osdr.nasa.gov/bio/repo/data/studies/OSD-656" target="_blank" rel="noreferrer">OSD-656</a> are cached as citation metadata for explanations.</p></article>
+    </section>
+
+    <footer><span>VITALS / QUANTUMBYTES / NASA SPACE APPS CHALLENGE</span><span>SIMULATED REPLAY • NOT A MEDICAL DEVICE</span></footer>
+  </main>
+  <script src="/assets/js/console.js"></script>
+</body>
+</html>
